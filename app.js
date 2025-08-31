@@ -104,41 +104,71 @@ class MCQTestGenerator {
 - create
 - init
 
-2. The OS component that decides which process runs next is:
-- Dispatcher
-- Scheduler*
-- Memory manager
-- File manager
+2. Analyze the following pseudocode for bubble sort:
+BEGIN BubbleSort
+    FOR i = 0 TO n-2
+        FOR j = 0 TO n-2-i
+            IF arr[j] > arr[j+1] THEN
+                SWAP arr[j] AND arr[j+1]
+            END IF
+        END FOR
+    END FOR
+END BubbleSort
+What is the time complexity of this algorithm?
+- O(n)*
+- O(n²)*
+- O(n log n)
+- O(1)
 
-3. PCB stands for:
-- Process Control Block*
-- Program Control Buffer
-- Process Code Backup
-- None
+3. Consider this pseudocode:
+FUNCTION findMax(array, size)
+    max = array[0]
+    FOR i = 1 TO size-1
+        IF array[i] > max THEN
+            max = array[i]
+        END IF
+    END FOR
+    RETURN max
+END FUNCTION
+What does this algorithm do?
+- Finds the minimum element*
+- Finds the maximum element*
+- Sorts the array
+- Counts elements
 
-4. Which scheduling algorithm gives the shortest average waiting time?
-- FCFS
-- SJF*
-- Round Robin
-- Priority
+4. Given the following recursive pseudocode:
+FUNCTION factorial(n)
+    IF n = 0 OR n = 1 THEN
+        RETURN 1
+    ELSE
+        RETURN n * factorial(n-1)
+    END IF
+END FUNCTION
+What is factorial(5)?
+- 100
+- 120*
+- 125
+- 150
 
-5. Deadlock can be prevented by:
-- Mutual Exclusion
-- Hold and Wait
-- No Preemption
-- All of the above*
-
-6. Consider a scenario where multiple processes are competing for system resources. In a distributed system, what are the key challenges in implementing mutual exclusion? Explain how the concept of distributed mutual exclusion differs from traditional mutual exclusion in a centralized system, and discuss the trade-offs between different approaches such as token-based algorithms versus voting-based algorithms.
-- Token-based algorithms provide better fault tolerance*
-- Voting-based algorithms have lower message complexity
-- Both approaches have identical performance characteristics
-- Centralized mutual exclusion is always superior
-
-7. In the context of operating system design, analyze the relationship between memory management and process scheduling. How does virtual memory implementation affect the choice of scheduling algorithms? Consider scenarios where a system experiences high page fault rates and explain how this impacts overall system performance and the effectiveness of different scheduling strategies.
-- Virtual memory has no impact on scheduling decisions
-- High page fault rates favor CPU-intensive scheduling policies
-- Memory management and scheduling are completely independent
-- Page fault handling requires coordination between memory manager and scheduler*`;
+5. Examine this binary search pseudocode:
+FUNCTION binarySearch(arr, target, low, high)
+    WHILE low <= high
+        mid = (low + high) / 2
+        IF arr[mid] = target THEN
+            RETURN mid
+        ELSE IF arr[mid] < target THEN
+            low = mid + 1
+        ELSE
+            high = mid - 1
+        END IF
+    END WHILE
+    RETURN -1
+END FUNCTION
+What is the prerequisite for this algorithm to work correctly?
+- Array must be sorted*
+- Array must be unsorted
+- Array must have odd number of elements
+- Array must contain unique elements`;
 
         this.mcqInput.value = sampleText;
     }
@@ -153,7 +183,7 @@ class MCQTestGenerator {
         return shuffled;
     }
 
-    // Enhanced question parsing with better multi-line support
+    // Enhanced question parsing with better multi-line and pseudocode support
     parseQuestions(text) {
         const questions = [];
         const questionBlocks = text.trim().split(/\n\s*\n/);
@@ -177,7 +207,7 @@ class MCQTestGenerator {
                 const line = lines[i].trim();
                 // If line doesn't start with option markers, it's part of the question
                 if (!line.startsWith('-') && !line.startsWith('•') && !line.startsWith('*')) {
-                    question += ' ' + line;
+                    question += '\n' + line; // Preserve line breaks for pseudocode structure
                     questionEndIndex = i + 1;
                 } else {
                     break;
@@ -219,13 +249,25 @@ class MCQTestGenerator {
         return questions;
     }
 
-    // Enhanced text formatting for better display
+    // Enhanced text formatting for preserving pseudocode structure
     formatQuestionText(questionText) {
         return questionText
             .trim()
-            .replace(/\s+/g, ' ') // Normalize whitespace
+            // Preserve line breaks and indentation for pseudocode
             .replace(/\n\s*\n/g, '\n\n') // Preserve paragraph breaks
-            .replace(/([.!?])\s+([A-Z])/g, '$1 $2'); // Ensure proper sentence spacing
+            .replace(/^(\s+)/gm, '$1'); // Preserve indentation
+    }
+
+    // Detect if text contains pseudocode patterns
+    isPseudocode(text) {
+        const pseudocodePatterns = [
+            /\b(BEGIN|END|IF|THEN|ELSE|FOR|WHILE|FUNCTION|RETURN|PROCEDURE)\b/i,
+            /\b(TO|STEP|DO|LOOP|REPEAT|UNTIL)\b/i,
+            /^\s*(IF|FOR|WHILE|BEGIN|FUNCTION)/im,
+            /\s*(THEN|ELSE|END IF|END FOR|END WHILE)/i
+        ];
+        
+        return pseudocodePatterns.some(pattern => pattern.test(text));
     }
 
     generateTest() {
@@ -282,19 +324,18 @@ class MCQTestGenerator {
         this.resultsSection.classList.remove('hidden');
     }
 
-    // Enhanced question display with multi-line support
+    // Enhanced question display with pseudocode and multi-line support
     displayCurrentQuestion() {
         const question = this.questions[this.currentQuestionIndex];
 
-        // Enhanced question text handling for multi-line support
-        const formattedQuestion = this.formatQuestionText(question.question);
+        // Format question text while preserving structure
+        const formattedQuestion = this.formatQuestionForDisplay(question.question);
         
-        // Use innerHTML instead of textContent to preserve line breaks if needed
-        // But sanitize the content first for security
-        this.questionText.innerHTML = this.sanitizeHTML(formattedQuestion);
-
-        // Apply CSS classes for better multi-line display
-        this.questionText.className = 'question-text multiline-support';
+        // Apply appropriate styling based on content type
+        this.questionText.innerHTML = formattedQuestion;
+        this.questionText.className = this.isPseudocode(question.question) 
+            ? 'question-text pseudocode-support' 
+            : 'question-text multiline-support';
 
         this.optionsContainer.innerHTML = '';
 
@@ -310,7 +351,7 @@ class MCQTestGenerator {
             optionElement.innerHTML = `
                 <div class="option-content">
                     <div class="option-letter">${String.fromCharCode(65 + index)}</div>
-                    <div class="option-text">${this.sanitizeHTML(option)}</div>
+                    <div class="option-text">${this.escapeHtml(option)}</div>
                 </div>
             `;
 
@@ -324,11 +365,70 @@ class MCQTestGenerator {
         this.updateFlagButton();
     }
 
-    // Simple HTML sanitization to prevent XSS while preserving basic formatting
-    sanitizeHTML(text) {
+    // Format question text for proper display while preserving structure
+    formatQuestionForDisplay(text) {
+        // Escape HTML to prevent XSS while preserving formatting
+        let formatted = this.escapeHtml(text);
+        
+        // Convert line breaks to HTML breaks
+        formatted = formatted.replace(/\n/g, '<br>');
+        
+        // If it's pseudocode, wrap it in a code-like container
+        if (this.isPseudocode(text)) {
+            // Identify pseudocode blocks and wrap them
+            const lines = formatted.split('<br>');
+            let inCodeBlock = false;
+            let result = [];
+            let codeLines = [];
+            
+            lines.forEach(line => {
+                const trimmedLine = line.trim();
+                
+                // Check if line looks like pseudocode
+                const isPseudocodeLine = /\b(BEGIN|END|IF|THEN|ELSE|FOR|WHILE|FUNCTION|RETURN|PROCEDURE|TO|STEP|DO|LOOP|REPEAT|UNTIL)\b/i.test(trimmedLine) ||
+                                       /^\s*(IF|FOR|WHILE|BEGIN|FUNCTION)/i.test(trimmedLine) ||
+                                       /\s*(THEN|ELSE|END IF|END FOR|END WHILE)/i.test(trimmedLine);
+                
+                if (isPseudocodeLine || (inCodeBlock && trimmedLine.length > 0 && !trimmedLine.endsWith('?'))) {
+                    if (!inCodeBlock) {
+                        inCodeBlock = true;
+                        if (result.length > 0) {
+                            result.push(''); // Add spacing before code block
+                        }
+                    }
+                    codeLines.push(line);
+                } else {
+                    if (inCodeBlock && codeLines.length > 0) {
+                        result.push('<div class="pseudocode-block">');
+                        result.push(codeLines.join('<br>'));
+                        result.push('</div>');
+                        codeLines = [];
+                        inCodeBlock = false;
+                    }
+                    if (trimmedLine.length > 0) {
+                        result.push(line);
+                    }
+                }
+            });
+            
+            // Handle any remaining code lines
+            if (codeLines.length > 0) {
+                result.push('<div class="pseudocode-block">');
+                result.push(codeLines.join('<br>'));
+                result.push('</div>');
+            }
+            
+            return result.join('<br>');
+        }
+        
+        return formatted;
+    }
+
+    // Simple HTML escaping to prevent XSS
+    escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
-        return div.innerHTML.replace(/\n/g, '<br>');
+        return div.innerHTML;
     }
 
     selectOption(index) {
@@ -492,6 +592,12 @@ class MCQTestGenerator {
                 result.options[result.userAnswer] : 'No answer';
             const correctAnswerText = result.options[result.correctAnswer];
 
+            // Format the question for results display
+            const formattedQuestion = this.formatQuestionForDisplay(result.question);
+            const questionClass = this.isPseudocode(result.question) 
+                ? 'result-question pseudocode-support' 
+                : 'result-question multiline-support';
+
             resultElement.innerHTML = `
                 <div class="result-header">
                     <span class="result-number">Question ${index + 1}</span>
@@ -500,7 +606,7 @@ class MCQTestGenerator {
                     </span>
                     ${result.isFlagged ? '<span class="flag-indicator">🚩 Flagged</span>' : ''}
                 </div>
-                <div class="result-question multiline-support">${this.sanitizeHTML(result.question)}</div>
+                <div class="${questionClass}">${formattedQuestion}</div>
                 <div class="result-answers">
                     <div class="answer-row ${result.isCorrect ? 'correct-answer' : 'wrong-answer'}">
                         <strong>Your Answer:</strong> ${userAnswerText}
