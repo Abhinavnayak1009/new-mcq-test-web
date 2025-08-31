@@ -3,244 +3,163 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MCQ Testing System - Pseudocode Support with Original UI</title>
-    <link rel="stylesheet" href="mcq-original-ui-styles.css">
-    <style>
-        /* Basic styling for the application */
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .container {
-            min-height: 100vh;
-        }
-        
-        .input-header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding: 2rem 1rem 1rem;
-        }
-        
-        .input-header h1 {
-            color: #2c3e50;
-            margin-bottom: 0.5rem;
-            font-size: 2.5rem;
-        }
-        
-        .input-header p {
-            color: #7f8c8d;
-            font-size: 1.1rem;
-        }
-        
-        /* Original Results Header Styling */
-        .results-header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding-top: 1rem;
-        }
-        
-        .results-header h2 {
-            color: #2c3e50;
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-        
-        /* Original Results Summary Section */
-        .results-summary {
-            display: flex;
-            justify-content: space-around;
-            margin: 2rem 0;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-        
-        .summary-item {
-            text-align: center;
-            padding: 1rem;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            min-width: 120px;
-        }
-        
-        .summary-label {
-            display: block;
-            font-size: 0.9rem;
-            color: #7f8c8d;
-            margin-bottom: 0.5rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .summary-value {
-            display: block;
-            font-size: 1.5rem;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        
-        .warning-message {
-            background-color: #fff3cd;
-            color: #856404;
-            padding: 1rem;
-            border-radius: 6px;
-            border-left: 4px solid #ffc107;
-            margin: 1rem 0;
-        }
-    </style>
+    <title>MCQ Test Generator</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <!-- Input Section -->
-        <div id="input-section" class="input-section">
-            <div class="input-header">
-                <h1>MCQ Test Generator</h1>
-                <p>Create and take multiple choice question tests with support for pseudocode and multi-line questions</p>
-            </div>
+        <header class="header">
+            <h1>MCQ Test Generator</h1>
+            <p>Create interactive multiple choice tests from your questions</p>
+        </header>
 
-            <div class="input-container">
-                <label for="mcq-input" class="input-label">Enter your MCQ questions (supports pseudocode structure):</label>
-                <textarea 
-                    id="mcq-input" 
-                    class="input-textarea"
-                    placeholder="Format for regular questions:
-1. Your question here?
+        <!-- Input Section -->
+        <section id="input-section" class="section">
+            <div class="card">
+                <div class="card__header">
+                    <h2>Paste Your MCQ Questions</h2>
+                </div>
+                <div class="card__body">
+                    <div class="format-instructions">
+                        <h3>Format Instructions</h3>
+                        <p>Format your MCQs like this:</p>
+                        <pre class="format-example">1. Question text here?
 - Option A
-- Option B*
+- Option B
 - Option C
 - Option D
 
-Format for pseudocode questions:
-2. Analyze the following pseudocode:
-BEGIN Algorithm
-    FOR i = 1 TO n
-        IF condition THEN
-            RETURN value
-        END IF
-    END FOR
-END Algorithm
-What is the time complexity?
-- O(1)
-- O(n)*
-- O(n²)
-- O(log n)"
-                ></textarea>
-                <div id="parse-error" class="parse-error hidden"></div>
+2. Another question?
+- Option 1
+- Option 2
+- Option 3
+- Option 4</pre>
+                        <p><strong>Note:</strong> To specify correct answers, add an asterisk (*) after the correct option:</p>
+                        <pre class="format-example">1. Which is the capital of France?
+- London
+- Paris*
+- Berlin
+- Madrid</pre>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="mcq-input" class="form-label">Your MCQ Questions</label>
+                        <textarea 
+                            id="mcq-input" 
+                            class="form-control" 
+                            rows="15" 
+                            placeholder="Paste your MCQ questions here following the format above..."></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button id="generate-test-btn" class="btn btn--primary btn--lg">Generate Test</button>
+                        <button id="load-sample-btn" class="btn btn--outline">Load Sample Questions</button>
+                    </div>
+                    
+                    <div id="parse-error" class="error-message hidden"></div>
+                </div>
             </div>
+        </section>
 
-            <div class="input-actions">
-                <button id="generate-test-btn" class="btn btn--primary">Generate Test</button>
-                <button id="load-sample-btn" class="btn btn--secondary">Load Sample Questions</button>
-            </div>
-        </div>
-
-        <!-- Test Section -->
-        <div id="test-section" class="test-section hidden">
+        <!-- Test Interface -->
+        <section id="test-section" class="section hidden">
             <div class="test-header">
-                <div class="progress-container">
+                <div class="test-progress">
+                    <span id="question-counter">Question 1 of 10</span>
                     <div class="progress-bar">
                         <div id="progress-fill" class="progress-fill"></div>
                     </div>
                 </div>
-                
-                <div class="question-info">
-                    <div id="question-counter" class="question-counter">Question 1 of 10</div>
-                    <div id="answered-count" class="answered-count">0 of 10 answered</div>
-                </div>
-            </div>
-
-            <div class="question-container">
-                <div id="question-text" class="question-text multiline-support">
-                    Question text will appear here
-                </div>
-                
-                <div id="options-container" class="options-container">
-                    <!-- Options will be dynamically generated here -->
-                </div>
-            </div>
-
-            <div class="navigation-container">
-                <button id="prev-btn" class="btn btn--secondary">← Previous</button>
-                
-                <div class="flag-container">
-                    <button id="flag-question-btn" class="flag-question-btn btn">
+                <div class="test-actions">
+                    <button id="flag-question-btn" class="btn btn--outline btn--sm">
                         <span id="flag-text">Flag for Review</span>
                     </button>
                 </div>
-                
-                <button id="next-btn" class="btn btn--primary">Next →</button>
-                <button id="submit-test-btn" class="btn btn--success hidden">Submit Test</button>
-            </div>
-        </div>
-
-        <!-- Results Section - ORIGINAL UI RESTORED -->
-        <div id="results-section" class="results-section hidden">
-            <div class="results-header">
-                <h2>Test Results</h2>
-                <div id="score-circle" class="score-circle">
-                    <span id="score-percentage">0%</span>
-                </div>
-                <div id="score-text" class="score-text">0 out of 0</div>
-                <div id="score-description" class="score-description">Grade: F</div>
             </div>
 
-            <!-- ORIGINAL RESULTS SUMMARY LAYOUT -->
-            <div class="results-summary">
-                <div class="summary-item">
-                    <span class="summary-label">Correct</span>
-                    <span class="summary-value" id="correct-count">0</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Incorrect</span>
-                    <span class="summary-value" id="incorrect-count">0</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Flagged</span>
-                    <span class="summary-value" id="flagged-count">0</span>
+            <div class="card question-card">
+                <div class="card__body">
+                    <h3 id="question-text" class="question-text"></h3>
+                    <div id="options-container" class="options-container">
+                        <!-- Options will be dynamically inserted here -->
+                    </div>
                 </div>
             </div>
 
-            <!-- ORIGINAL RESULTS ACTIONS -->
-            <div class="results-actions">
-                <button id="retake-test-btn" class="btn btn--primary">Retake Test</button>
-                <button id="new-test-btn" class="btn btn--secondary">New Test</button>
-                <button id="export-results-btn" class="btn btn--success">Export Results</button>
+            <div class="navigation-controls">
+                <button id="prev-btn" class="btn btn--secondary">Previous</button>
+                <div class="nav-center">
+                    <span id="answered-count" class="answered-indicator">0 of 10 answered</span>
+                </div>
+                <button id="next-btn" class="btn btn--primary">Next</button>
+                <button id="submit-test-btn" class="btn btn--primary hidden">Submit Test</button>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results-section" class="section hidden">
+            <div class="card">
+                <div class="card__header">
+                    <h2>Test Results</h2>
+                </div>
+                <div class="card__body">
+                    <div class="score-summary">
+                        <div class="score-circle">
+                            <span id="score-percentage">0%</span>
+                        </div>
+                        <div class="score-details">
+                            <h3 id="score-text">0 out of 0</h3>
+                            <p id="score-description">Grade: F</p>
+                        </div>
+                    </div>
+
+                    <div class="results-stats">
+                        <div class="stat-item">
+                            <span class="stat-value" id="correct-count">0</span>
+                            <span class="stat-label">Correct</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="incorrect-count">0</span>
+                            <span class="stat-label">Incorrect</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value" id="flagged-count">0</span>
+                            <span class="stat-label">Flagged</span>
+                        </div>
+                    </div>
+
+                    <div class="results-actions">
+                        <button id="retake-test-btn" class="btn btn--primary">Retake Test</button>
+                        <button id="new-test-btn" class="btn btn--outline">Create New Test</button>
+                        <button id="export-results-btn" class="btn btn--secondary">Export Results</button>
+                    </div>
+                </div>
             </div>
 
-            <!-- ORIGINAL DETAILED RESULTS -->
             <div class="detailed-results">
                 <h3>Detailed Results</h3>
                 <div id="detailed-results-container">
-                    <!-- Detailed results will be generated here -->
+                    <!-- Detailed results will be inserted here -->
                 </div>
             </div>
-        </div>
+        </section>
 
-        <!-- Submit Confirmation Modal -->
+        <!-- Confirmation Modal -->
         <div id="submit-modal" class="modal hidden">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h3>Submit Test</h3>
+                <h3>Submit Test?</h3>
+                <p>Are you sure you want to submit your test? You won't be able to change your answers after submission.</p>
+                <div id="unanswered-warning" class="warning-text hidden">
+                    <strong>Warning:</strong> You have <span id="unanswered-count">0</span> unanswered questions.
                 </div>
-                
-                <div class="modal-body">
-                    <p>Are you sure you want to submit your test?</p>
-                    <div id="unanswered-warning" class="warning-message hidden">
-                        <p><strong>Warning:</strong> You have <span id="unanswered-count">0</span> unanswered questions.</p>
-                    </div>
-                </div>
-                
-                <div class="modal-footer">
-                    <button id="cancel-submit-btn" class="btn btn--secondary">Cancel</button>
-                    <button id="confirm-submit-btn" class="btn btn--primary">Submit</button>
+                <div class="modal-actions">
+                    <button id="cancel-submit-btn" class="btn btn--outline">Cancel</button>
+                    <button id="confirm-submit-btn" class="btn btn--primary">Submit Test</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="mcq-pseudocode-support.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
