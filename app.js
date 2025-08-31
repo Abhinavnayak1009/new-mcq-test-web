@@ -1,14 +1,15 @@
 class MCQTestGenerator {
     constructor() {
         this.questions = [];
+        this.originalQuestions = []; // Store original order for reference
         this.currentQuestionIndex = 0;
         this.userAnswers = [];
         this.flaggedQuestions = new Set();
         this.testStarted = false;
         this.results = [];
-        
         this.initializeElements();
         this.attachEventListeners();
+        this.loadSampleData();
     }
 
     initializeElements() {
@@ -17,12 +18,12 @@ class MCQTestGenerator {
         this.generateTestBtn = document.getElementById('generate-test-btn');
         this.loadSampleBtn = document.getElementById('load-sample-btn');
         this.parseError = document.getElementById('parse-error');
-        
+
         // Section elements
         this.inputSection = document.getElementById('input-section');
         this.testSection = document.getElementById('test-section');
         this.resultsSection = document.getElementById('results-section');
-        
+
         // Test interface elements
         this.questionCounter = document.getElementById('question-counter');
         this.progressFill = document.getElementById('progress-fill');
@@ -34,7 +35,7 @@ class MCQTestGenerator {
         this.answeredCount = document.getElementById('answered-count');
         this.flagQuestionBtn = document.getElementById('flag-question-btn');
         this.flagText = document.getElementById('flag-text');
-        
+
         // Results elements
         this.scorePercentage = document.getElementById('score-percentage');
         this.scoreText = document.getElementById('score-text');
@@ -46,7 +47,7 @@ class MCQTestGenerator {
         this.retakeTestBtn = document.getElementById('retake-test-btn');
         this.newTestBtn = document.getElementById('new-test-btn');
         this.exportResultsBtn = document.getElementById('export-results-btn');
-        
+
         // Modal elements
         this.submitModal = document.getElementById('submit-modal');
         this.cancelSubmitBtn = document.getElementById('cancel-submit-btn');
@@ -56,30 +57,44 @@ class MCQTestGenerator {
     }
 
     attachEventListeners() {
-        // Use arrow functions to preserve 'this' context
-        this.generateTestBtn.onclick = () => this.generateTest();
-        this.loadSampleBtn.onclick = () => this.loadSampleQuestions();
-        
-        if (this.prevBtn) this.prevBtn.onclick = () => this.navigateQuestion(-1);
-        if (this.nextBtn) this.nextBtn.onclick = () => this.navigateQuestion(1);
-        if (this.submitTestBtn) this.submitTestBtn.onclick = () => this.showSubmitModal();
-        if (this.flagQuestionBtn) this.flagQuestionBtn.onclick = () => this.toggleFlag();
-        
-        if (this.retakeTestBtn) this.retakeTestBtn.onclick = () => this.retakeTest();
-        if (this.newTestBtn) this.newTestBtn.onclick = () => this.startNewTest();
-        if (this.exportResultsBtn) this.exportResultsBtn.onclick = () => this.exportResults();
-        
-        if (this.cancelSubmitBtn) this.cancelSubmitBtn.onclick = () => this.hideSubmitModal();
-        if (this.confirmSubmitBtn) this.confirmSubmitBtn.onclick = () => this.submitTest();
-        
+        this.generateTestBtn.addEventListener('click', () => this.generateTest());
+        this.loadSampleBtn.addEventListener('click', () => this.loadSampleQuestions());
+        this.prevBtn.addEventListener('click', () => this.navigateQuestion(-1));
+        this.nextBtn.addEventListener('click', () => this.navigateQuestion(1));
+        this.submitTestBtn.addEventListener('click', () => this.showSubmitModal());
+        this.flagQuestionBtn.addEventListener('click', () => this.toggleFlag());
+        this.retakeTestBtn.addEventListener('click', () => this.retakeTest());
+        this.newTestBtn.addEventListener('click', () => this.startNewTest());
+        this.exportResultsBtn.addEventListener('click', () => this.exportResults());
+        this.cancelSubmitBtn.addEventListener('click', () => this.hideSubmitModal());
+        this.confirmSubmitBtn.addEventListener('click', () => this.submitTest());
+
         // Close modal when clicking outside
-        if (this.submitModal) {
-            this.submitModal.onclick = (e) => {
-                if (e.target === this.submitModal) {
-                    this.hideSubmitModal();
-                }
-            };
-        }
+        this.submitModal.addEventListener('click', (e) => {
+            if (e.target === this.submitModal) {
+                this.hideSubmitModal();
+            }
+        });
+    }
+
+    loadSampleData() {
+        this.sampleQuestions = [
+            {
+                question: "Which system call creates a new process in UNIX?",
+                options: ["fork", "exec", "create", "init"],
+                correct: 0
+            },
+            {
+                question: "The OS component that decides which process runs next is:",
+                options: ["Dispatcher", "Scheduler", "Memory manager", "File manager"],
+                correct: 1
+            },
+            {
+                question: "PCB stands for:",
+                options: ["Process Control Block", "Program Control Buffer", "Process Code Backup", "None"],
+                correct: 0
+            }
+        ];
     }
 
     loadSampleQuestions() {
@@ -111,61 +126,106 @@ class MCQTestGenerator {
 - Mutual Exclusion
 - Hold and Wait
 - No Preemption
-- All of the above*`;
-        
+- All of the above*
+
+6. Consider a scenario where multiple processes are competing for system resources. In a distributed system, what are the key challenges in implementing mutual exclusion? Explain how the concept of distributed mutual exclusion differs from traditional mutual exclusion in a centralized system, and discuss the trade-offs between different approaches such as token-based algorithms versus voting-based algorithms.
+- Token-based algorithms provide better fault tolerance*
+- Voting-based algorithms have lower message complexity
+- Both approaches have identical performance characteristics
+- Centralized mutual exclusion is always superior
+
+7. In the context of operating system design, analyze the relationship between memory management and process scheduling. How does virtual memory implementation affect the choice of scheduling algorithms? Consider scenarios where a system experiences high page fault rates and explain how this impacts overall system performance and the effectiveness of different scheduling strategies.
+- Virtual memory has no impact on scheduling decisions
+- High page fault rates favor CPU-intensive scheduling policies
+- Memory management and scheduling are completely independent
+- Page fault handling requires coordination between memory manager and scheduler*`;
+
         this.mcqInput.value = sampleText;
     }
 
+    // Fisher-Yates shuffle algorithm for randomizing questions
+    shuffleArray(array) {
+        const shuffled = [...array]; // Create a copy to avoid modifying original
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    }
+
+    // Enhanced question parsing with better multi-line support
     parseQuestions(text) {
         const questions = [];
         const questionBlocks = text.trim().split(/\n\s*\n/);
-        
+
         for (let block of questionBlocks) {
             if (!block.trim()) continue;
-            
+
             const lines = block.trim().split('\n');
             if (lines.length < 2) continue;
-            
+
             // Extract question (first line, remove numbering)
             const questionLine = lines[0].trim();
             const questionMatch = questionLine.match(/^\d+\.\s*(.+)$/);
             if (!questionMatch) continue;
-            
-            const question = questionMatch[1];
+
+            let question = questionMatch[1];
+
+            // Handle multi-line questions - look for continuation lines
+            let questionEndIndex = 1;
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                // If line doesn't start with option markers, it's part of the question
+                if (!line.startsWith('-') && !line.startsWith('•') && !line.startsWith('*')) {
+                    question += ' ' + line;
+                    questionEndIndex = i + 1;
+                } else {
+                    break;
+                }
+            }
+
             const options = [];
             let correctIndex = -1;
-            
-            // Extract options
-            for (let i = 1; i < lines.length; i++) {
+
+            // Extract options starting from where question ends
+            for (let i = questionEndIndex; i < lines.length; i++) {
                 const line = lines[i].trim();
                 if (line.startsWith('-') || line.startsWith('•')) {
                     let optionText = line.substring(1).trim();
-                    
+
                     // Check for correct answer marker
                     if (optionText.endsWith('*')) {
                         optionText = optionText.slice(0, -1).trim();
                         correctIndex = options.length;
                     }
-                    
                     options.push(optionText);
                 }
             }
-            
+
             if (options.length >= 2) {
                 // If no correct answer specified, assume first option
                 if (correctIndex === -1) {
                     correctIndex = 0;
                 }
-                
+
                 questions.push({
-                    question,
+                    question: this.formatQuestionText(question),
                     options,
                     correct: correctIndex
                 });
             }
         }
-        
+
         return questions;
+    }
+
+    // Enhanced text formatting for better display
+    formatQuestionText(questionText) {
+        return questionText
+            .trim()
+            .replace(/\s+/g, ' ') // Normalize whitespace
+            .replace(/\n\s*\n/g, '\n\n') // Preserve paragraph breaks
+            .replace(/([.!?])\s+([A-Z])/g, '$1 $2'); // Ensure proper sentence spacing
     }
 
     generateTest() {
@@ -176,17 +236,19 @@ class MCQTestGenerator {
         }
 
         try {
-            this.questions = this.parseQuestions(text);
-            
-            if (this.questions.length === 0) {
+            const parsedQuestions = this.parseQuestions(text);
+            if (parsedQuestions.length === 0) {
                 this.showError("No valid questions found. Please check the format and try again.");
                 return;
             }
 
+            // Store original order and create randomized version
+            this.originalQuestions = [...parsedQuestions];
+            this.questions = this.shuffleArray(parsedQuestions);
+
             this.hideError();
             this.initializeTest();
             this.showTestSection();
-            
         } catch (error) {
             this.showError("Error parsing questions: " + error.message);
         }
@@ -220,36 +282,53 @@ class MCQTestGenerator {
         this.resultsSection.classList.remove('hidden');
     }
 
+    // Enhanced question display with multi-line support
     displayCurrentQuestion() {
         const question = this.questions[this.currentQuestionIndex];
-        this.questionText.textContent = question.question;
+
+        // Enhanced question text handling for multi-line support
+        const formattedQuestion = this.formatQuestionText(question.question);
         
+        // Use innerHTML instead of textContent to preserve line breaks if needed
+        // But sanitize the content first for security
+        this.questionText.innerHTML = this.sanitizeHTML(formattedQuestion);
+
+        // Apply CSS classes for better multi-line display
+        this.questionText.className = 'question-text multiline-support';
+
         this.optionsContainer.innerHTML = '';
-        
+
         question.options.forEach((option, index) => {
             const optionElement = document.createElement('div');
             optionElement.className = 'option-item';
-            
+
             const isSelected = this.userAnswers[this.currentQuestionIndex] === index;
             if (isSelected) {
                 optionElement.classList.add('selected');
             }
-            
+
             optionElement.innerHTML = `
-                <input type="radio" 
-                       name="question-${this.currentQuestionIndex}" 
-                       value="${index}" 
-                       class="option-radio"
-                       ${isSelected ? 'checked' : ''}>
-                <span class="option-text">${option}</span>
+                <div class="option-content">
+                    <div class="option-letter">${String.fromCharCode(65 + index)}</div>
+                    <div class="option-text">${this.sanitizeHTML(option)}</div>
+                </div>
             `;
-            
-            optionElement.onclick = () => this.selectOption(index);
-            
+
+            optionElement.addEventListener('click', () => {
+                this.selectOption(index);
+            });
+
             this.optionsContainer.appendChild(optionElement);
         });
 
         this.updateFlagButton();
+    }
+
+    // Simple HTML sanitization to prevent XSS while preserving basic formatting
+    sanitizeHTML(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML.replace(/\n/g, '<br>');
     }
 
     selectOption(index) {
@@ -273,10 +352,10 @@ class MCQTestGenerator {
         const current = this.currentQuestionIndex + 1;
         const total = this.questions.length;
         const percentage = (current / total) * 100;
-        
+
         this.questionCounter.textContent = `Question ${current} of ${total}`;
         this.progressFill.style.width = `${percentage}%`;
-        
+
         const answeredCount = this.userAnswers.filter(answer => answer !== null).length;
         this.answeredCount.textContent = `${answeredCount} of ${total} answered`;
     }
@@ -284,9 +363,9 @@ class MCQTestGenerator {
     updateNavigation() {
         const isFirst = this.currentQuestionIndex === 0;
         const isLast = this.currentQuestionIndex === this.questions.length - 1;
-        
+
         this.prevBtn.disabled = isFirst;
-        
+
         if (isLast) {
             this.nextBtn.classList.add('hidden');
             this.submitTestBtn.classList.remove('hidden');
@@ -298,19 +377,16 @@ class MCQTestGenerator {
 
     toggleFlag() {
         const questionIndex = this.currentQuestionIndex;
-        
         if (this.flaggedQuestions.has(questionIndex)) {
             this.flaggedQuestions.delete(questionIndex);
         } else {
             this.flaggedQuestions.add(questionIndex);
         }
-        
         this.updateFlagButton();
     }
 
     updateFlagButton() {
         const isFlagged = this.flaggedQuestions.has(this.currentQuestionIndex);
-        
         if (isFlagged) {
             this.flagText.textContent = 'Unflag';
             this.flagQuestionBtn.classList.add('btn--warning');
@@ -322,14 +398,14 @@ class MCQTestGenerator {
 
     showSubmitModal() {
         const unansweredCount = this.userAnswers.filter(answer => answer === null).length;
-        
+
         if (unansweredCount > 0) {
             this.unansweredWarning.classList.remove('hidden');
             this.unansweredCount.textContent = unansweredCount;
         } else {
             this.unansweredWarning.classList.add('hidden');
         }
-        
+
         this.submitModal.classList.remove('hidden');
     }
 
@@ -346,15 +422,15 @@ class MCQTestGenerator {
 
     calculateResults() {
         let correctAnswers = 0;
-        
+
         this.results = this.questions.map((question, index) => {
             const userAnswer = this.userAnswers[index];
             const isCorrect = userAnswer === question.correct;
-            
+
             if (isCorrect) {
                 correctAnswers++;
             }
-            
+
             return {
                 question: question.question,
                 options: question.options,
@@ -364,7 +440,7 @@ class MCQTestGenerator {
                 isFlagged: this.flaggedQuestions.has(index)
             };
         });
-        
+
         this.totalQuestions = this.questions.length;
         this.correctCount = correctAnswers;
         this.incorrectCount = this.totalQuestions - correctAnswers;
@@ -375,7 +451,7 @@ class MCQTestGenerator {
         // Update score summary
         this.scorePercentage.textContent = `${this.percentage}%`;
         this.scoreText.textContent = `${this.correctCount} out of ${this.totalQuestions}`;
-        
+
         // Update grade
         let grade = 'F';
         if (this.percentage >= 90) grade = 'A+';
@@ -383,62 +459,60 @@ class MCQTestGenerator {
         else if (this.percentage >= 70) grade = 'B';
         else if (this.percentage >= 60) grade = 'C';
         else if (this.percentage >= 50) grade = 'D';
-        
+
         this.scoreDescription.textContent = `Grade: ${grade}`;
-        
+
         // Update stats
         this.correctCountElement.textContent = this.correctCount;
         this.incorrectCountElement.textContent = this.incorrectCount;
         this.flaggedCountElement.textContent = this.flaggedQuestions.size;
-        
+
         // Update score circle color
         const scoreCircle = document.querySelector('.score-circle');
         if (this.percentage >= 70) {
-            scoreCircle.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+            scoreCircle.style.backgroundColor = 'var(--color-success)';
         } else if (this.percentage >= 50) {
-            scoreCircle.style.background = 'linear-gradient(135deg, #ffc107 0%, #e0a800 100%)';
+            scoreCircle.style.backgroundColor = 'var(--color-warning)';
         } else {
-            scoreCircle.style.background = 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)';
+            scoreCircle.style.backgroundColor = 'var(--color-error)';
         }
-        
+
         // Display detailed results
         this.displayDetailedResults();
     }
 
     displayDetailedResults() {
         this.detailedResultsContainer.innerHTML = '';
-        
+
         this.results.forEach((result, index) => {
             const resultElement = document.createElement('div');
             resultElement.className = `result-item ${result.isCorrect ? 'correct' : 'incorrect'}`;
-            
-            const userAnswerText = result.userAnswer !== null 
-                ? result.options[result.userAnswer] 
-                : 'No answer';
+
+            const userAnswerText = result.userAnswer !== null ? 
+                result.options[result.userAnswer] : 'No answer';
             const correctAnswerText = result.options[result.correctAnswer];
-            
+
             resultElement.innerHTML = `
-                <div class="result-question">
-                    ${index + 1}. ${result.question}
-                    ${result.isFlagged ? ' 🚩' : ''}
+                <div class="result-header">
+                    <span class="result-number">Question ${index + 1}</span>
+                    <span class="result-status ${result.isCorrect ? 'correct' : 'incorrect'}">
+                        ${result.isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                    </span>
+                    ${result.isFlagged ? '<span class="flag-indicator">🚩 Flagged</span>' : ''}
                 </div>
-                <div class="result-answer">
-                    <div class="answer-section">
-                        <div class="answer-label">Your Answer:</div>
-                        <div class="answer-text ${result.isCorrect ? 'correct' : 'incorrect'}">
-                            ${userAnswerText}
+                <div class="result-question multiline-support">${this.sanitizeHTML(result.question)}</div>
+                <div class="result-answers">
+                    <div class="answer-row ${result.isCorrect ? 'correct-answer' : 'wrong-answer'}">
+                        <strong>Your Answer:</strong> ${userAnswerText}
+                    </div>
+                    ${!result.isCorrect ? `
+                        <div class="answer-row correct-answer">
+                            <strong>Correct Answer:</strong> ${correctAnswerText}
                         </div>
-                    </div>
-                    <div class="answer-section">
-                        <div class="answer-label">Correct Answer:</div>
-                        <div class="answer-text correct">${correctAnswerText}</div>
-                    </div>
-                    <div class="result-status ${result.isCorrect ? 'correct' : 'incorrect'}">
-                        ${result.isCorrect ? 'Correct' : 'Incorrect'}
-                    </div>
+                    ` : ''}
                 </div>
             `;
-            
+
             this.detailedResultsContainer.appendChild(resultElement);
         });
     }
@@ -449,44 +523,44 @@ class MCQTestGenerator {
     }
 
     startNewTest() {
-        this.questions = [];
-        this.testStarted = false;
         this.showInputSection();
+        this.questions = [];
+        this.originalQuestions = [];
+        this.currentQuestionIndex = 0;
+        this.userAnswers = [];
+        this.flaggedQuestions.clear();
+        this.testStarted = false;
+        this.results = [];
     }
 
     exportResults() {
-        let exportText = `MCQ Test Results\n`;
-        exportText += `================\n\n`;
-        exportText += `Score: ${this.correctCount}/${this.totalQuestions} (${this.percentage}%)\n`;
-        exportText += `Correct: ${this.correctCount}\n`;
-        exportText += `Incorrect: ${this.incorrectCount}\n`;
-        exportText += `Flagged: ${this.flaggedQuestions.size}\n\n`;
-        exportText += `Detailed Results:\n`;
-        exportText += `-----------------\n\n`;
-        
-        this.results.forEach((result, index) => {
-            const userAnswerText = result.userAnswer !== null 
-                ? result.options[result.userAnswer] 
-                : 'No answer';
-            const correctAnswerText = result.options[result.correctAnswer];
-            
-            exportText += `${index + 1}. ${result.question}\n`;
-            exportText += `   Your Answer: ${userAnswerText}\n`;
-            exportText += `   Correct Answer: ${correctAnswerText}\n`;
-            exportText += `   Result: ${result.isCorrect ? 'Correct' : 'Incorrect'}\n`;
-            if (result.isFlagged) exportText += `   Status: Flagged\n`;
-            exportText += `\n`;
-        });
-        
-        // Create and download file
-        const blob = new Blob([exportText], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `mcq-test-results-${new Date().toISOString().slice(0, 10)}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        const exportData = {
+            timestamp: new Date().toISOString(),
+            totalQuestions: this.totalQuestions,
+            correctAnswers: this.correctCount,
+            incorrectAnswers: this.incorrectCount,
+            percentage: this.percentage,
+            flaggedCount: this.flaggedQuestions.size,
+            results: this.results.map((result, index) => ({
+                questionNumber: index + 1,
+                question: result.question,
+                userAnswer: result.userAnswer !== null ? result.options[result.userAnswer] : 'No answer',
+                correctAnswer: result.options[result.correctAnswer],
+                isCorrect: result.isCorrect,
+                isFlagged: result.isFlagged
+            }))
+        };
+
+        const dataStr = JSON.stringify(exportData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `mcq-test-results-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         URL.revokeObjectURL(url);
     }
 
